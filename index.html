@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meetingraum - Buchungssystem - Ebene 4</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #F5F5F5;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            background-color: #84BD22;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            color: white;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .calendar-nav {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            font-size: 18px;
+            background-color: #299E8E;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            height: 50px;
+        }
+
+        .btn:hover {
+            background-color: #84BD22;
+        }
+
+        select#roomSelect {
+            font-size: 18px;
+            padding: 15px 30px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: 120px repeat(5, 1fr);
+            gap: 2px;
+            background-color: #ddd;
+            border: 1px solid #ddd;
+        }
+
+        .calendar-header-cell,
+        .time-cell,
+        .calendar-cell {
+            padding: 10px;
+            background-color: white;
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+        }
+
+        .calendar-header-cell {
+            font-weight: bold;
+            background-color: #299E8E;
+            color: white;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .time-cell {
+            font-weight: bold;
+            background-color: #f5f5f5;
+            border-right: 1px solid #ddd;
+        }
+
+        .calendar-cell {
+            cursor: pointer;
+            transition: background-color 0.3s;
+            border-right: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .calendar-cell:hover {
+            background-color: #f0f0f0;
+        }
+
+        .booked {
+            background-color: #86BB22;
+            color: white;
+            cursor: not-allowed;
+            position: relative;
+        }
+
+        .booked .booking-info {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 800px;
+            overflow: auto;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+
+        .btn-cancel {
+            background-color: #FF4C4C;
+            padding: 15px 30px;
+        }
+
+        .btn-cancel:hover {
+            background-color: #FF0000;
+        }
+
+        .booking-block {
+            background-color: #86BB22;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 16px;
+            grid-column: span 1;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Meetingraum - Buchungssystem - Ebene 4</h1>
+    </div>
+    
+    <div class="container">
+        <div class="calendar-header">
+            <div class="calendar-nav">
+                <button class="btn" id="prevWeek">< Vorherige Woche</button>
+                <button class="btn" id="nextWeek">Nächste Woche ></button>
+                <button class="btn" id="historyButton">Buchungshistorie</button>
+            </div>
+            <div class="calendar-nav">
+                <select id="roomSelect" class="btn">
+                    <option value="1">Meetingraum 1</option>
+                    <option value="2">Meetingraum 2</option>
+                    <option value="3">Meetingraum 3</option>
+                </select>
+                <span class="calendar-icon" id="calendarIcon">📅</span>
+            </div>
+        </div>
+        
+        <div id="calendar" class="calendar-grid">
+            <!-- Calendar will be generated here -->
+        </div>
+        
+        <div class="room-info">
+            <h3>Raumdetails</h3>
+            <p><strong>Maximale Teilnehmerzahl:</strong> <span id="maxParticipants">8</span></p>
+            <p><strong>Ausstattung:</strong> Beamer, Whiteboard, Video-Konferenzsystem</p>
+            <p><strong>Zusätzlich:</strong> Snacks & Getränke verfügbar</p>
+        </div>
+    </div>
+
+    <div id="bookingModal" class="modal">
+        <div class="modal-content">
+            <h2>Termin buchen</h2>
+            <form id="bookingForm">
+                <div class="form-group">
+                    <label for="title">Titel</label>
+                    <input type="text" id="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="name">Name</label>
+                    <input type="text" id="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">E-Mail</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="department">Abteilung</label>
+                    <input type="text" id="department" required>
+                </div>
+                <div class="form-group">
+                    <label for="participants">Teilnehmerzahl</label>
+                    <input type="number" id="participants" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="startTime">Startzeit</label>
+                    <input type="datetime-local" id="startTime" required>
+                </div>
+                <div class="form-group">
+                    <label for="endTime">Endzeit</label>
+                    <input type="datetime-local" id="endTime" required>
+                </div>
+                <div class="form-group">
+                    <label for="type">Buchungstyp</label>
+                    <select id="type">
+                        <option value="internal">Intern</option>
+                        <option value="external">Extern</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn">Buchen</button>
+                <button type="button" class="btn btn-cancel" onclick="closeModal()">Abbrechen</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentDate = new Date();
+        const calendar = document.getElementById('calendar');
+        const bookingModal = document.getElementById('bookingModal');
+        let selectedCell = null;
+
+        function initCalendar() {
+            generateCalendarGrid();
+            loadBookings();
+        }
+
+        function generateCalendarGrid() {
+            calendar.innerHTML = '';
+            const weekDays = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag'];
+            const startOfWeek = getStartOfWeek(currentDate);
+
+            calendar.appendChild(createCell('Zeit', 'calendar-header-cell'));
+            weekDays.forEach((day, index) => {
+                const date = new Date(startOfWeek);
+                date.setDate(date.getDate() + index);
+                const formattedDate = date.toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long' });
+                calendar.appendChild(createCell(formattedDate, 'calendar-header-cell'));
+            });
+
+            for (let hour = 8; hour <= 19; hour++) {
+                calendar.appendChild(createCell(`${hour}:00`, 'time-cell'));
+
+                for (let day = 0; day < 5; day++) {
+                    const cell = createCell('', 'calendar-cell');
+                    cell.dataset.time = `${hour}:00`;
+                    cell.dataset.day = day;
+                    cell.dataset.room = document.getElementById('roomSelect').value;
+                    cell.addEventListener('click', () => openBookingModal(cell));
+                    calendar.appendChild(cell);
+                }
+            }
+        }
+
+        function createCell(content, className) {
+            const cell = document.createElement('div');
+            cell.textContent = content;
+            cell.className = className;
+            return cell;
+        }
+
+        function openBookingModal(cell) {
+            selectedCell = cell;
+            bookingModal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            bookingModal.style.display = 'none';
+            document.getElementById('bookingForm').reset();
+        }
+
+        function getStartOfWeek(date) {
+            const tempDate = new Date(date);
+            const day = tempDate.getDay();
+            const diff = tempDate.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(tempDate.setDate(diff));
+        }
+
+        bookingForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const title = document.getElementById('title').value;
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+
+            const bookingData = {
+                title,
+                startTime,
+                endTime,
+                room: document.getElementById('roomSelect').value,
+                day: selectedCell.dataset.day
+            };
+
+            saveBooking(bookingData);
+            closeModal();
+            loadBookings();
+        });
+
+        function saveBooking(booking) {
+            let bookings = JSON.parse(localStorage.getItem('bookings')) || [];
+            bookings.push(booking);
+            localStorage.setItem('bookings', JSON.stringify(bookings));
+        }
+
+        function loadBookings() {
+            const bookings = JSON.parse(localStorage.getItem('bookings')) || [];
+            bookings.forEach(booking => {
+                const dayCells = document.querySelectorAll(`[data-day="${booking.day}"]`);
+                dayCells.forEach(cell => {
+                    if (cell.dataset.time === booking.startTime) {
+                        cell.classList.add('booked');
+                        cell.innerHTML = `<div class="booking-info">${booking.title}</div>`;
+                    }
+                });
+            });
+        }
+
+        initCalendar();
+    </script>
+</body>
+</html>
